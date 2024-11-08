@@ -1,101 +1,104 @@
-import Image from "next/image";
+'use client'
 
-export default function Home() {
+import { useState, useEffect } from 'react'
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
+import { Badge } from "@/components/ui/badge"
+
+const wordsToHide = ['DOG', 'CAT', 'BIRD', 'FISH', 'LION']
+
+const generateRandomString = (length: number) => {
+  const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
+  return Array(length).fill(null).map(() => characters.charAt(Math.floor(Math.random() * characters.length))).join('')
+}
+
+const insertWordsRandomly = (baseString: string, words: string[]) => {
+  let result = baseString
+  words.forEach(word => {
+    const insertIndex = Math.floor(Math.random() * (result.length - word.length))
+    result = result.slice(0, insertIndex) + word + result.slice(insertIndex + word.length)
+  })
+  return result
+}
+
+export default function HiddenWordFinder() {
+  const [randomString, setRandomString] = useState('')
+  const [foundWords, setFoundWords] = useState<Set<string>>(new Set())
+  const [input, setInput] = useState('')
+  const [message, setMessage] = useState('')
+  const [timeLeft, setTimeLeft] = useState(60)
+
+  useEffect(() => {
+    startNewGame()
+  }, [])
+
+  useEffect(() => {
+    if (timeLeft > 0) {
+      const timer = setTimeout(() => setTimeLeft(prev => prev - 1), 1000)
+      return () => clearTimeout(timer)
+    } else if (foundWords.size < wordsToHide.length) {
+      setMessage('Time\'s up! Game over.')
+    }
+  }, [timeLeft, foundWords])
+
+  const startNewGame = () => {
+    const baseString = generateRandomString(50)
+    setRandomString(insertWordsRandomly(baseString, wordsToHide))
+    setFoundWords(new Set())
+    setInput('')
+    setMessage('')
+    setTimeLeft(60)
+  }
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault()
+    const word = input.toUpperCase()
+    if (wordsToHide.includes(word) && !foundWords.has(word)) {
+      setFoundWords(new Set(foundWords).add(word))
+      setMessage(`Great! You found "${word}"`)
+      setInput('')
+      if (foundWords.size + 1 === wordsToHide.length) {
+        setMessage('Congratulations! You found all the words!')
+      }
+    } else if (foundWords.has(word)) {
+      setMessage('You already found this word')
+    } else {
+      setMessage('Sorry, that word is not in the list')
+    }
+  }
+
   return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-8 row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-semibold">
-              src/app/page.tsx
-            </code>
-            .
-          </li>
-          <li>Save and see your changes instantly.</li>
-        </ol>
-
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:min-w-44"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+    <Card className="w-full max-w-2xl mx-auto mt-20">
+      <CardHeader>
+        <CardTitle>Hidden Word Finder</CardTitle>
+        <CardDescription>Find the hidden words in the random string of letters!</CardDescription>
+      </CardHeader>
+      <CardContent>
+        <div className="flex justify-between mb-4">
+          <Badge variant="secondary">Found: {foundWords.size}/{wordsToHide.length}</Badge>
+          <Badge variant="secondary">Time: {timeLeft}s</Badge>
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-6 flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
+        <div className="p-4 bg-muted rounded-lg mb-4 text-center break-all">
+          {randomString}
+        </div>
+        <form onSubmit={handleSubmit} className="flex gap-2">
+          <Input 
+            type="text" 
+            value={input} 
+            onChange={(e) => setInput(e.target.value)} 
+            placeholder="Enter word"
+            disabled={timeLeft === 0 || foundWords.size === wordsToHide.length}
           />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
-    </div>
-  );
+          <Button type="submit" disabled={timeLeft === 0 || foundWords.size === wordsToHide.length}>
+            Submit
+          </Button>
+        </form>
+        {message && <p className="mt-2 text-center text-sm">{message}</p>}
+      </CardContent>
+      <CardFooter className="flex justify-center">
+        <Button onClick={startNewGame}>New Game</Button>
+      </CardFooter>
+    </Card>
+  )
 }
