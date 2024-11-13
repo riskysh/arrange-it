@@ -6,7 +6,15 @@ import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 
-const wordsToHide = ['DOG', 'CAT', 'BIRD', 'FISH', 'LION']
+const getRandomNames = () => {
+  const wordsToHide = ['DOG', 'CAT', 'BIRD', 'FISH', 'LION', 'TIGER', 'BEAR', 'ELEPHANT', ]
+
+  const shuffleNames = wordsToHide.sort(() => 0.5 - Math.random())
+  const selectedNames = shuffleNames.slice(0, 5)
+
+  return selectedNames
+
+}
 
 const generateRandomString = (length: number) => {
   const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
@@ -28,6 +36,7 @@ export default function HiddenWordFinder() {
   const [input, setInput] = useState('')
   const [message, setMessage] = useState('')
   const [timeLeft, setTimeLeft] = useState(60)
+  const [hiddenWords, setHiddenWords] = useState<string[]>([])
 
   useEffect(() => {
     startNewGame()
@@ -37,14 +46,16 @@ export default function HiddenWordFinder() {
     if (timeLeft > 0) {
       const timer = setTimeout(() => setTimeLeft(prev => prev - 1), 1000)
       return () => clearTimeout(timer)
-    } else if (foundWords.size < wordsToHide.length) {
+    } else if (foundWords.size < hiddenWords.length) {
       setMessage('Time\'s up! Game over.')
     }
-  }, [timeLeft, foundWords])
+  }, [timeLeft, foundWords, hiddenWords])
 
   const startNewGame = () => {
     const baseString = generateRandomString(50)
-    setRandomString(insertWordsRandomly(baseString, wordsToHide))
+    const newHiddenWords = getRandomNames()
+    setHiddenWords(newHiddenWords)
+    setRandomString(insertWordsRandomly(baseString, newHiddenWords))
     setFoundWords(new Set())
     setInput('')
     setMessage('')
@@ -54,11 +65,11 @@ export default function HiddenWordFinder() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     const word = input.toUpperCase()
-    if (wordsToHide.includes(word) && !foundWords.has(word)) {
+    if (hiddenWords.includes(word) && !foundWords.has(word)) {
       setFoundWords(new Set(foundWords).add(word))
       setMessage(`Great! You found "${word}"`)
       setInput('')
-      if (foundWords.size + 1 === wordsToHide.length) {
+      if (foundWords.size + 1 === hiddenWords.length) {
         setMessage('Congratulations! You found all the words!')
       }
     } else if (foundWords.has(word)) {
@@ -71,12 +82,12 @@ export default function HiddenWordFinder() {
   return (
     <Card className="w-full max-w-2xl mx-auto mt-20">
       <CardHeader>
-        <CardTitle>Hidden Word Finder</CardTitle>
+        <CardTitle>Word Finder</CardTitle>
         <CardDescription>Find the hidden words in the random string of letters!</CardDescription>
       </CardHeader>
       <CardContent>
         <div className="flex justify-between mb-4">
-          <Badge variant="secondary">Found: {foundWords.size}/{wordsToHide.length}</Badge>
+          <Badge variant="secondary">Found: {foundWords.size}/{hiddenWords.length}</Badge>
           <Badge variant="secondary">Time: {timeLeft}s</Badge>
         </div>
         <div className="p-4 bg-muted rounded-lg mb-4 text-center break-all">
@@ -88,16 +99,16 @@ export default function HiddenWordFinder() {
             value={input} 
             onChange={(e) => setInput(e.target.value)} 
             placeholder="Enter word"
-            disabled={timeLeft === 0 || foundWords.size === wordsToHide.length}
+            disabled={timeLeft === 0 || foundWords.size === hiddenWords.length}
           />
-          <Button type="submit" disabled={timeLeft === 0 || foundWords.size === wordsToHide.length}>
+          <Button type="submit" disabled={timeLeft === 0 || foundWords.size === hiddenWords.length}>
             Submit
           </Button>
         </form>
         {message && <p className="mt-2 text-center text-sm">{message}</p>}
       </CardContent>
       <CardFooter className="flex justify-center">
-        <Button onClick={startNewGame}>New Game</Button>
+        <Button onClick={startNewGame}>Start</Button>
       </CardFooter>
     </Card>
   )
